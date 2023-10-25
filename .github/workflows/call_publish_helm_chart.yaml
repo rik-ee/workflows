@@ -1,0 +1,53 @@
+name: Call - Publish Helm Chart
+
+on:
+  workflow_call:
+    inputs:
+      chart_dir:
+        description: Path of the helm chart directory in the app repository. Defaults to 'chart'.
+        required: false
+        type: string
+      publish_dir:
+        description: Path of the directory where the app chart will be published to. Defaults to repository name.
+        required: false
+        type: string
+
+concurrency:
+  group: publish-helm-chart__${{ inputs.publish_dir || github.repository }}
+  cancel-in-progress: true
+
+env:
+  BASE_SRC_DIR: app-repo
+  BASE_PUB_DIR: charts-repo
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout App Repository
+        uses: actions/checkout@v4
+        with:
+          path: ${{ env.BASE_SRC_DIR }}
+          token: ${{ secrets.RIK_SERVICE_TOKEN }}
+          repository: ${{ github.repository }}
+          ref: ${{ github.ref_name }}
+
+      - name: Checkout Charts Repository
+        uses: actions/checkout@v4
+        with:
+          path: ${{ env.BASE_PUB_DIR }}
+          token: ${{ secrets.RIK_SERVICE_TOKEN }}
+          repository: rik-ee/rik-ee.github.io
+
+      - name: Checkout Workflows Repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.RIK_SERVICE_TOKEN }}
+          repository: rik-ee/workflows
+          sparse-checkout: scripts/publish_helm_chart.sh
+
+      - name: Publish Helm Chart
+        run: ./scripts/publish_helm_chart.sh
+        env:
+          SRC_SUBDIR: ${{ inputs.chart_dir || 'chart' }}
+          PUB_SUBDIR: ${{ inputs.publish_dir || github.repository }}

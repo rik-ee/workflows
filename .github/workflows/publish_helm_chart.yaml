@@ -21,13 +21,13 @@ env:
   BASE_PUB_DIR: charts-repo
 
 jobs:
-  check-caller-identity:
-    uses: rik-ee/workflows/.github/workflows/check_caller_identity.yaml@main
+  check-caller-origin:
+    uses: rik-ee/workflows/.github/workflows/check_caller_origin.yaml@main
     with:
       caller_name: 'Publish Helm Chart'
 
   publish-helm-chart:
-    needs: check-caller-identity
+    needs: check-caller-origin
     runs-on: ubuntu-latest
     steps:
       - name: Checkout App Repository

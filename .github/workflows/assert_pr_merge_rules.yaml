@@ -1,0 +1,74 @@
+name: Assert PR Merge Rules
+
+on:
+  workflow_call:
+    inputs:
+      allowed_team:
+        description: A team in the rik-ee organization whose members are allowed to run the workflow.
+        required: true
+        type: string
+
+jobs:
+  check-caller-origin:
+    uses: rik-ee/workflows/.github/workflows/check_caller_origin.yaml@main
+    with:
+      caller_name: 'Assert PR Merge Rules'
+
+  check-user-identity:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
+    steps:
+      - name: Check Team Membership
+        uses: tspascoal/get-user-teams-membership@v2
+        id: team
+        with:
+          organization: rik-ee
+          username: ${{ github.actor }}
+          team: ${{ inputs.allowed_team }}
+          GITHUB_TOKEN: ${{ secrets.RIK_SERVICE_TOKEN }}
+
+      - name: Assert Team Membership
+        if: steps.team.outputs.isTeamMember == 'false'
+        run: |
+          echo "ERROR: Actor '${{ github.actor }}' does not belong to the '${{ inputs.allowed_team }}' team."
+          exit 1
+
+  assert-branch-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR direction
+        uses: boxboat/Validate-Merge@0.0.1
+        with:
+          ACCEPTABLE_MERGES: |
+            staging -> production
+            staging -> preview
+
+  fail-on-fork:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name != github.repository
+    steps:
+      - name: Fail on forked head
+        run: |
+          echo "ERROR: Not allowed to run RIK organization CI pipeline from a fork."
+          exit 1
+
+  check-staging:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check staging status
+        run: |
+          CONCLUSION=$(gh api "/repos/${{ github.repository }}/actions/runs" \
+            --method GET \
+            --field page=1 \
+            --field per_page=1 \
+            --field event=push \
+            --field branch=staging \
+            --jq ".workflow_runs[0].conclusion")
+          
+          if [[ "$CONCLUSION" != 'success' ]]; then
+            echo "ERROR: Not allowed to deploy to public when the latest \
+              staging deployment action has not concluded in success."
+            exit 1
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.RIK_SERVICE_TOKEN }}

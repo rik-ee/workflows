@@ -1,4 +1,4 @@
-name: Check Caller Identity
+name: Check Caller Origin
 
 on:
   workflow_call:

@@ -1,5 +1,11 @@
 #!/bin/bash
 
+#  Required env vars:
+#   1) BASE_SRC_DIR = checkout directory of the app repository
+#   2) BASE_PUB_DIR = checkout directory of the helm charts repository
+#   3) SRC_SUBDIR = sub-path to the un-packaged helm chart in the base source dir
+#   4) PUB_SUBDIR = sub-path to the published helm package in the base publish dir
+
 srcPath="${BASE_SRC_DIR}/${SRC_SUBDIR}"
 pubPath="${BASE_PUB_DIR}/${PUB_SUBDIR}"
 chartUrl="https://rik-ee.github.io/${PUB_SUBDIR}"

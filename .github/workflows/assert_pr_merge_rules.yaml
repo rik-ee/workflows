@@ -10,13 +10,23 @@ on:
 
 jobs:
   check-caller-origin:
-    uses: rik-ee/workflows/.github/workflows/check_caller_origin.yaml@main
-    with:
-      caller_name: 'Assert PR Merge Rules'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Workflows Repository
+        uses: actions/checkout@v4
+        with:
+          repository: rik-ee/workflows
+          sparse-checkout: scripts
+
+      - name: Check Caller Origin
+        run: ./scripts/check_caller_origin.sh
+        env:
+          GITHUB_REPO: ${{ github.repository }}
+          CALLER_NAME: Assert PR Merge Rules
 
   check-user-identity:
-    runs-on: ubuntu-latest
     if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
     steps:
       - name: Check Team Membership
         uses: tspascoal/get-user-teams-membership@v2
@@ -44,10 +54,10 @@ jobs:
             staging -> preview
 
   fail-on-fork:
-    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
     steps:
-      - name: Fail on forked head
+      - name: Fail on Forked Head
         run: |
           echo "ERROR: Not allowed to run RIK organization CI pipeline from a fork."
           exit 1

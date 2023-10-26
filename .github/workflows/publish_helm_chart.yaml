@@ -17,26 +17,24 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  BASE_SRC_DIR: app-repo
-  BASE_PUB_DIR: charts-repo
+  BASE_SRC_DIR: app_repo
+  BASE_PUB_DIR: charts_repo
 
 jobs:
-  check-caller-origin:
-    uses: rik-ee/workflows/.github/workflows/check_caller_origin.yaml@main
-    with:
-      caller_name: 'Publish Helm Chart'
-
   publish-helm-chart:
-    needs: check-caller-origin
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout App Repository
+      - name: Checkout Workflows Repository
         uses: actions/checkout@v4
         with:
-          path: ${{ env.BASE_SRC_DIR }}
-          token: ${{ secrets.RIK_SERVICE_TOKEN }}
-          repository: ${{ github.repository }}
-          ref: ${{ github.ref_name }}
+          repository: rik-ee/workflows
+          sparse-checkout: scripts
+
+      - name: Check Caller Origin
+        run: ./scripts/check_caller_origin.sh
+        env:
+          GITHUB_REPO: ${{ github.repository }}
+          CALLER_NAME: Publish Helm Chart
 
       - name: Checkout Charts Repository
         uses: actions/checkout@v4
@@ -45,12 +43,13 @@ jobs:
           token: ${{ secrets.RIK_SERVICE_TOKEN }}
           repository: rik-ee/rik-ee.github.io
 
-      - name: Checkout Workflows Repository
+      - name: Checkout App Repository
         uses: actions/checkout@v4
         with:
+          path: ${{ env.BASE_SRC_DIR }}
           token: ${{ secrets.RIK_SERVICE_TOKEN }}
-          repository: rik-ee/workflows
-          sparse-checkout: scripts/publish_helm_chart.sh
+          repository: ${{ github.repository }}
+          ref: ${{ github.ref_name }}
 
       - name: Publish Helm Chart
         run: ./scripts/publish_helm_chart.sh

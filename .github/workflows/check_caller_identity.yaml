@@ -1,4 +1,4 @@
-name: Call - Check Caller Identity
+name: Check Caller Identity
 
 on:
   workflow_call:
@@ -7,6 +7,7 @@ on:
         description: The name of the caller workflow.
         required: true
         type: string
+        default: UNDEFINED
 
 jobs:
   check-caller-identity:

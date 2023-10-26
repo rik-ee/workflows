@@ -1,4 +1,4 @@
-name: Call - Publish Helm Chart
+name: Publish Helm Chart
 
 on:
   workflow_call:
@@ -22,7 +22,7 @@ env:
 
 jobs:
   check-caller-identity:
-    uses: rik-ee/workflows/.github/workflows/call_check_caller_identity.yaml@main
+    uses: rik-ee/workflows/.github/workflows/check_caller_identity.yaml@main
     with:
       caller_name: 'Publish Helm Chart'
 

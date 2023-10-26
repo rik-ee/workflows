@@ -1,0 +1,84 @@
+name: Build and Push Image
+
+on:
+  workflow_call:
+    inputs:
+      pkg_name:
+        required: true
+        type: string
+      component:
+        required: true
+        type: string
+      image_type:
+        required: true
+        type: string
+      checkout_ref:
+        required: true
+        type: string
+      tag_branch:
+        required: false
+        type: string
+      app_version:
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    env:
+      PKG_PARTIAL_URL: ghcr.io/rik-ee/${{ inputs.pkg_name }}-${{ inputs.component }}
+    steps:
+      - name: Checkout Workflows Repository
+        uses: actions/checkout@v4
+        with:
+          repository: rik-ee/workflows
+          sparse-checkout: scripts
+
+      - name: Check Caller Origin
+        run: ./scripts/check_caller_origin.sh
+        env:
+          GITHUB_REPO: ${{ github.repository }}
+          CALLER_NAME: Build and Push Image
+
+      - name: Generate Image Tags
+        run: ./scripts/generate_image_tags.sh
+        env:
+          IMAGE_TYPE: ${{ inputs.image_type }}
+          TAG_BRANCH: ${{ inputs.tag_branch }}
+          APP_VERSION: ${{ inputs.app_version }}
+
+      - name: Checkout App Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.checkout_ref }}
+
+      - name: Add image metadata
+        uses: docker/metadata-action@v4
+        id: meta
+        with:
+          images: "${{ env.PKG_PARTIAL_URL }}-${{ inputs.image_type }}"
+          tags: |
+            type=raw,value=${{ env.FIRST_TAG }}
+            type=raw,value=${{ env.SECOND_TAG }}
+            ${{ env.THIRD_TAG && format('type=raw,value={0}', env.THIRD_TAG) || '' }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          context: "{{defaultContext}}:${{ inputs.component }}"
+          build-args: BASE_IMAGE=${{ env.PKG_PARTIAL_URL }}-base:latest
+          file: "./Dockerfile-${{ inputs.image_type }}"

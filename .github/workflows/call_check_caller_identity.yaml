@@ -1,0 +1,23 @@
+name: Call - Check Caller Identity
+
+on:
+  workflow_call:
+    inputs:
+      caller_name:
+        description: The name of the caller workflow.
+        required: true
+        type: string
+
+jobs:
+  check-caller-identity:
+    if: startsWith(github.repository, 'rik-ee/') == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Raise Error
+        run: |
+          echo "ERROR: Reusable workflow '${{ inputs.caller_name }}' is \
+            only available to repositories within the RIK organization."
+          echo "If you wish to use this reusable workflow in your project, \
+            you must copy and modify this workflow and any related scripts \
+            to be specifically suitable for your project requirements."
+          exit 1
